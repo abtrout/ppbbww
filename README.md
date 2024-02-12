@@ -1,12 +1,13 @@
 # `pp-boatwatch` 
 
-Locate large boats (e.g. container ships) as they pass by Pillar Point. 
+Locate large boats as they pass by Pillar Point. 
 
----
+![](https://i.imgur.com/4aR13rR.png)
 
 Install the requirements.
 
 ```
+$ sudo apt install ffmpeg
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 $ pip install -r requirements.txt
@@ -15,18 +16,22 @@ $ pip install -r requirements.txt
 Accumulate data by sampling the Mavericks cams on Surfline.
 
 ```
-$ ./scrape.py
-2024-02-10 10:19:32,612 cam_name=mavericksov Extracted keyframes from chunk
-2024-02-10 10:19:32,612 cam_name=mavericksov delay=52 Sleeping
-2024-02-10 10:19:33,157 cam_name=mavericks Extracted keyframes from chunk
-2024-02-10 10:19:33,157 cam_name=mavericks delay=77 Sleeping
+$ ./streamsampler.py
+2024-02-11 20:36:15,997 cam_name=mavericksov num_frames=4 Extracted frames
+2024-02-11 20:36:15,998 cam_name=mavericksov delay=12 Sleeping
+2024-02-11 20:36:16,583 cam_name=mavericks num_frames=5 Extracted frames
+2024-02-11 20:36:16,583 cam_name=mavericks delay=11 Sleeping
+2024-02-11 20:36:28,261 cam_name=mavericks num_frames=5 Extracted frames
+2024-02-11 20:36:28,261 cam_name=mavericks delay=14 Sleeping
+2024-02-11 20:36:28,949 cam_name=mavericksov num_frames=4 Extracted frames
+2024-02-11 20:36:28,949 cam_name=mavericksov delay=14 Sleeping
 ...
 ```
 
-Find boats in images with [`BoatFinder`](./detect.py#L12).
+Find boats in images with [`BoatFinder`](./boatfinder.py#L12).
 
 ```
-$ ./detect.py $(find ./data/mavericks/02102024/10/*.jpg | head -n10)
+$ ./boatfinder.py $(find ./data/mavericks/02102024/10/*.jpg | head -n10)
 2024-02-10 10:40:43,803 BoatFinder initializing ...
 2024-02-10 10:40:44,473 BoatFinder initialized! took 0.6702592820074642 seconds
 2024-02-10 10:40:44,477 Searching file ./data/mavericks/02102024/10/1707589172-thumb-0001.jpg...
