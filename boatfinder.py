@@ -4,7 +4,7 @@ import logging
 import sys
 import torch
 
-from PIL import Image
+from PIL import Image, ImageDraw
 from time import perf_counter
 from transformers import DetrImageProcessor, DetrForObjectDetection
 
@@ -30,7 +30,7 @@ class BoatFinder:
             label = self.model.config.id2label[label.item()]
             if label == "boat":
                 score = round(score.item(), 3)
-                box = [round(i, 3) for i in box.tolist()]
+                box = [int(i) for i in box.tolist()]
                 yield (score, label, box)
         logging.info(f"Finished search in {perf_counter() - t0} seconds")
 
@@ -54,5 +54,13 @@ if __name__ == "__main__":
     for img_file in sys.argv[1:]:
         image = Image.open(img_file)
         logging.info(f"Searching file {img_file}...")
-        for score, label, box in bf.find(image):
-            logging.info(f">> label={label}\t score={score}\t box={box}\t")
+        res = list(bf.find(image))
+        if len(res) > 0:
+            draw = ImageDraw.Draw(image)
+            for score, label, box in res:
+                logging.info(f">> label={label}\t score={score}\t box={box}\t")
+                draw.rectangle(box, outline="#a6e22e")
+            out_file = img_file.removesuffix(".jpg") + "_boats.jpg"
+            image.save(out_file)
+            logging.info(f"Outlined matches and saved to file {out_file}")
+
