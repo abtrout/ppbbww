@@ -7,7 +7,8 @@ Locate large boats as they pass by Pillar Point.
 Install the requirements.
 
 ```
-$ sudo apt install ffmpeg
+$ sudo apt install ffmpeg               # for extracing keyframes
+$ sudo apt install nvidia-cuda-toolkit  # for GPU support
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 $ pip install -r requirements.txt
