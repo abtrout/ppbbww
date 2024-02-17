@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import aiohttp
 import asyncio
 import datetime
@@ -40,31 +38,5 @@ class StreamSampler:
             "-vf", "select=eq(pict_type\,I)",
             "-vsync", "vfr",
             f"{frames_dir}/{ts}-thumb-%04d.jpg"])
-
-        return [f for f in os.scandir(frames_dir) if f.name.startswith(f"{ts}")]
-
-
-async def sample_stream(cam_name):
-    ss = StreamSampler(cam_name)
-    while True:
-        try:
-            frames = await ss.get_recent_frames()
-            logging.info(
-                f"cam_name={cam_name} num_frames={len(frames)} Extracted frames"
-            )
-        except Exception as ex:
-            logging.error(f"cam_name={cam_name} Failed to get_recent_frames: {ex}")
-        delay = random.randint(5, 20)  # seconds.
-        logging.info(f"cam_name={cam_name} delay={delay} Sleeping")
-        await asyncio.sleep(delay)
-
-
-async def main():
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(sample_stream("mavericks"))
-        tg.create_task(sample_stream("mavericksov"))
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    asyncio.run(main())
+        # Return filenames of (ffmpeg generated) frames to caller.
+        return [f for f in os.scandir(frames_dir) if f.name.startswith(f"{ts}-thumb")]

@@ -4,20 +4,20 @@ Locate large boats as they pass by Pillar Point.
 
 ![](https://i.imgur.com/uSNPctj.jpeg)
 
-Install the requirements.
+#### Install the requirements.
 
 ```
-$ sudo apt install ffmpeg               # for extracing keyframes
-$ sudo apt install nvidia-cuda-toolkit  # for GPU support
-$ python3 -m venv .venv
-$ source .venv/bin/activate
-$ pip install -r requirements.txt
+$ apt install ffmpeg               # for frame extraction
+$ apt install nvidia-cuda-toolkit  # for GPU support
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install -e . 
 ```
 
-Accumulate data by sampling the Mavericks cams on Surfline.
+#### Accumulate data by sampling streams. 
 
 ```
-$ ./streamsampler.py
+$ sample-streams 
 2024-02-11 20:36:15,997 cam_name=mavericksov num_frames=4 Extracted frames
 2024-02-11 20:36:15,998 cam_name=mavericksov delay=12 Sleeping
 2024-02-11 20:36:16,583 cam_name=mavericks num_frames=5 Extracted frames
@@ -29,10 +29,10 @@ $ ./streamsampler.py
 ...
 ```
 
-Find boats in images with [`BoatFinder`](./boatfinder.py#L12).
+#### Find boats in images with [DETR](https://huggingface.co/facebook/detr-resnet-50). 
 
 ```
-$ ./boatfinder.py ./data/mavericksov/02142024/11/1707939852-thumb-0003.jpg
+$ find-boats 
 2024-02-14 13:56:06,022 BoatFinder initializing ...
 2024-02-14 13:56:08,380 BoatFinder initialized (for cuda:0); took 2.3576930790004553 seconds
 2024-02-14 13:56:08,384 Searching file ./data/mavericksov/02142024/11/1707939852-thumb-0003.jpg...
