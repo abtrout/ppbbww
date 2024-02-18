@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 import random
@@ -10,7 +11,9 @@ async def sample_stream(cam_name, data_dir):
     while True:
         try:
             frames = await ss.get_recent_frames()
-            logging.info(f"cam_name={cam_name} num_frames={len(frames)} Extracted frames")
+            logging.info(
+                f"cam_name={cam_name} num_frames={len(frames)} Extracted frames"
+            )
         except Exception as ex:
             logging.error(f"cam_name={cam_name} Failed to get_recent_frames: {ex}")
         # TODO: Decrease delay but only keep 1 frame?
@@ -26,7 +29,19 @@ async def main_task(cams, data_dir):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--cams",
+        nargs="+",
+        action="extend",
+        help="Surfline cam(s) to crawl",
+        required=True,
+    )
+    parser.add_argument(
+        "-d", "--dir", default="data", help="Directory to store extracted frames"
+    )
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    cams = ["mavericks", "mavericksov"]  # TODO: argparse.
-    data_dir = "./data"                  # TODO: argparse
-    asyncio.run(main_task(cams, data_dir))
+    asyncio.run(main_task(args.cams, args.dir))

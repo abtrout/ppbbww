@@ -17,7 +17,7 @@ $ pip install -e .
 #### Accumulate data by sampling streams. 
 
 ```
-$ sample-streams 
+$ sample-streams --cams mavericks mavericksov
 2024-02-11 20:36:15,997 cam_name=mavericksov num_frames=4 Extracted frames
 2024-02-11 20:36:15,998 cam_name=mavericksov delay=12 Sleeping
 2024-02-11 20:36:16,583 cam_name=mavericks num_frames=5 Extracted frames

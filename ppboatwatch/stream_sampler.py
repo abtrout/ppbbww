@@ -8,6 +8,13 @@ import subprocess
 import tempfile
 import time
 
+DEFAULT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0",
+    "Origin": "https://www.surfline.com",
+    "Referer": "https://www.surfline.com/",
+    "DNT": "1",
+}
+
 
 class StreamSampler:
     def __init__(self, cam_name, data_dir="./data"):
@@ -16,7 +23,11 @@ class StreamSampler:
         self.data_dir = data_dir
 
     async def get_recent_frames(self):
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession(
+            raise_for_status=True,
+            skip_auto_headers=list(DEFAULT_HEADERS.keys()),
+            headers=DEFAULT_HEADERS,
+        ) as session:
             chunk_url = await self.__get_recent_chunk_url(session)
             return self.__extract_frames(chunk_url)
 
