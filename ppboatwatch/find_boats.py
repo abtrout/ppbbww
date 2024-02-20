@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 
@@ -6,21 +7,42 @@ from .boat_finder import BoatFinder
 
 
 def main():
-    logging.basicConfig(level=logging.WARN, format="%(asctime)s %(message)s")
-    bf = BoatFinder()
-    find_dir = "./data"  # TODO: argparse.
-    for base, _, fs in os.walk(find_dir):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filepath")
+    parser.add_argument("-t", "--thresh", type=float, default=0.9)
+    parser.add_argument("-l", "--labels", type=str, nargs="+", action="extend")
+    parser.add_argument(
+        "-o",
+        "--outdir",
+        type=str,
+        help="Save annotated matches to given folder, if set.",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO if args.verbose else logging.WARN,
+        format="%(asctime)s %(message)s",
+    )
+
+    bf = BoatFinder(thresh=args.thresh, labels=args.labels)
+    for base, _, fs in os.walk(args.filepath):
         for f in fs:
-            # TODO: Ignore _boats.jpg files!
             img_file = f"{base}/{f}"
             image = Image.open(img_file)
-            res = list(bf.find(image))
-            if len(res) > 0:
-                draw = ImageDraw.Draw(image)
-                for score, label, box in res: 
-                    draw.rectangle(box, outline="#ff0000")
-                out_file = img_file.removesuffix(".jpg") + "_boats.jpg"
-                image.save(out_file)
-                logging.warning(f"Found {len(res)} matches in {img_file}")
-            else:
-                logging.warning(f"No matches in {img_file}")
+            matches = list(bf.find(image))
+            if len(matches) == 0:
+                logging.info(f"No matches in {img_file}.")
+                continue
+
+            logging.warn(f"Found {len(matches)} in {img_file}.")
+            draw = ImageDraw.Draw(image)
+            for label, score, box in matches:
+                logging.warn(f" >> {label} ({score})")
+                if args.outdir:
+                    # TODO: Add label text. Align top/left.
+                    draw.rectangle(list(box), outline="#a6e22e", width=2)
+
+            if args.outdir:
+                out_file = f.removesuffix(".jpg") + "_matches.jpg"
+                image.save(f"{args.outdir}/{out_file}")
