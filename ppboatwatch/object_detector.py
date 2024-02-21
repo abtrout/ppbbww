@@ -7,7 +7,7 @@ from time import perf_counter
 from transformers import DetrImageProcessor, DetrForObjectDetection
 
 
-class BoatFinder:
+class ObjectDetector:
     def __init__(self, thresh=0.95, labels=None):
         self.thresh = thresh
         self.filter_labels = labels
@@ -21,7 +21,7 @@ class BoatFinder:
             "facebook/detr-resnet-50", revision="no_timm"
         ).to(self.device)
         logging.info(
-            f"BoatFinder({self.device}) initialized in {perf_counter() - t0} seconds"
+            f"ObjectDetector initialized for device {self.device}; took {perf_counter() - t0} seconds."
         )
 
     def find(self, img):

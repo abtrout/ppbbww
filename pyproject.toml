@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [project.scripts]
-find-boats = "ppboatwatch.find_boats:main"
+find-objects = "ppboatwatch.find_objects:main"
 sample-streams = "ppboatwatch.sample_streams:main"
 
 [tool.setuptools]
