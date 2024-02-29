@@ -8,15 +8,15 @@ import os
 from slack_sdk.web.async_client import AsyncWebClient
 from PIL import Image, ImageDraw, ImageFont
 
+from .archive import Archive
 from .stream_sampler import StreamSampler
 from .object_detector import ObjectDetector
 
 
-async def sample_stream(frames_q, tmp_dir):
-    ss = StreamSampler("mavericksov", tmp_dir)
+async def sample_stream(frames_q, sampler):
     while True:
         try:
-            frames = await ss.get_recent_frames()
+            frames = await sampler.get_recent_frames()
             logging.warning(f"[sample_stream]: Extracted {len(frames)} recent frames")
             assert len(frames) > 0
             await frames_q.put(frames[0].path)
@@ -30,7 +30,7 @@ async def sample_stream(frames_q, tmp_dir):
         await asyncio.sleep(delay)
 
 
-async def find_matches(frames_q, matches_q):
+async def find_matches(frames_q, archive_q, announce_q):
     detector = ObjectDetector(thresh=0.80)
     while True:
         # Get filenames from the queue and run object detector.
@@ -41,16 +41,15 @@ async def find_matches(frames_q, matches_q):
             os.remove(frame_file)
             logging.warning(f"[find_matches]: No matches; cleaned up")
             continue
-        # Draw bounding boxes and labels for all matches.
-        ImageFont.load_default(size=13)
+        # Archive the frame and matches.
+        await archive_q.put((frame_file, matches))
+        # Draw bounding boxes and send to Slack.
         draw = ImageDraw.Draw(image)
         for label, score, box in matches:
-            #draw.text((box[0], box[1]-20), f"{label} {score}", fill="#ffffff", font_size=13)
             draw.rectangle(box, outline="#ffffff", width=2)
-        # Save file and put in queue; post_matches job will handle cleanup.
-        out_file = frame_file.removesuffix(".jpg") + "_matches.jpg"
-        image.save(out_file)
-        await matches_q.put(out_file)
+        out_file = tempfile.NamedTemporaryFile(delete=False)
+        image.save(out_file.name)
+        await announce_q.put(out_file.name)
 
 
 def filter_matches(matches):
@@ -74,9 +73,17 @@ def filter_matches(matches):
         yield (label, score, box)
 
 
-async def post_matches(matches_q, client):
+async def archive_matches(archive_q, archive):
     while True:
-        matches_path = await matches_q.get()
+        file, matches = await archive_q.get()
+        ts = file.split("/")[-1].split("-")[0]
+        for label, score, box in matches:
+            archive.add_match(ts=ts, filename=file, label=label, score=score, box=box)
+
+
+async def announce_matches(announce_q, client):
+    while True:
+        matches_path = await announce_q.get()
         await post_match(client, matches_path)
 
 
@@ -87,22 +94,30 @@ async def post_match(client, frame_file):
         logging.error(f"Failed to post_match: {res}")
 
 
-async def main_task():
+async def main_task(args):
+    archive = Archive(args.db_file)
     client = AsyncWebClient(token=os.environ["SLACK_API_TOKEN"])
-    frames_q, matches_q = asyncio.Queue(), asyncio.Queue()
-    tmp_dir = tempfile.TemporaryDirectory(dir=".")
+    sampler = StreamSampler("mavericksov", args.data_dir)
+
+    frames_q = asyncio.Queue()    # frames that should be inspected.
+    archive_q = asyncio.Queue()   # matches that should be archived.
+    announce_q = asyncio.Queue()  # matches that should be announced in Slack.
+
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(sample_stream(frames_q, tmp_dir.name))
-        tg.create_task(find_matches(frames_q, matches_q))
-        tg.create_task(post_matches(matches_q, client))
+        tg.create_task(sample_stream(frames_q, sampler))
+        tg.create_task(find_matches(frames_q, archive_q, announce_q))
+        tg.create_task(archive_matches(archive_q, archive))
+        tg.create_task(announce_matches(announce_q, client))
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--data-dir", default="./data", type=str)
+    parser.add_argument("-f", "--db-file", default="./archive.db", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.WARN
     logging.basicConfig(level=level, format="%(asctime)s %(message)s")
 
-    asyncio.run(main_task())
+    asyncio.run(main_task(args))
