@@ -32,6 +32,7 @@ async def sample_stream(frames_q, sampler):
 
 async def find_matches(frames_q, archive_q, announce_q):
     detector = ObjectDetector(thresh=0.80)
+    font = ImageFont.truetype("roboto-regular.ttf", 15)
     while True:
         # Get filenames from the queue and run object detector.
         frame_file = await frames_q.get()
@@ -46,8 +47,9 @@ async def find_matches(frames_q, archive_q, announce_q):
         # Draw bounding boxes and send to Slack.
         draw = ImageDraw.Draw(image)
         for label, score, box in matches:
-            draw.rectangle(box, outline="#ffffff", width=2)
-        out_file = tempfile.NamedTemporaryFile(delete=False)
+            draw.text((box[0], box[1] - 15), label, (255, 255, 255), font=font)
+            draw.rectangle(box, outline=(255, 255, 255), width=1)
+        out_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
         image.save(out_file.name)
         await announce_q.put(out_file.name)
 
@@ -56,14 +58,14 @@ def filter_matches(matches):
     for label, score, box in matches:
         box = list(box)
         # Skip matches at the bottom of the image area (rocks).
-        if box[1] > 640:
+        if box[1] > 600:
             continue
         # Skip common but uninteresting cases based on size and label.
         box_size = (box[2] - box[0]) * (box[3] - box[1])
         if box_size < 500:
             logging.debug(f"Skipping small box (box_size={box_size})")
             continue
-        if label == "boat" and box_size < 1500:
+        if label == "boat" and box_size < 3000:
             logging.debug(f"Skipping small boat (box_size={box_size})")
             continue
         if label == "bird" and box_size < 1000:
@@ -76,6 +78,7 @@ def filter_matches(matches):
 async def archive_matches(archive_q, archive):
     while True:
         file, matches = await archive_q.get()
+        logging.warning(f"[archive_matches] Archiving {file}: {matches}")
         ts = file.split("/")[-1].split("-")[0]
         for label, score, box in matches:
             archive.add_match(ts=ts, filename=file, label=label, score=score, box=box)
@@ -84,6 +87,7 @@ async def archive_matches(archive_q, archive):
 async def announce_matches(announce_q, client):
     while True:
         matches_path = await announce_q.get()
+        logging.warning(f"[annouce_matches] Posting match {matches_path}")
         await post_match(client, matches_path)
 
 
