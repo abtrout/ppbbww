@@ -93,7 +93,7 @@ async def announce_matches(announce_q, client):
         matches_path = await announce_q.get()
         logging.warning(f"[annouce_matches] Posting match {matches_path}")
         dt = int(time.time()) - last_announce_ts
-        thread_ts = await post_match(client, matches_path, thread_ts if dt < 15000 else None)
+        thread_ts = await post_match(client, matches_path, thread_ts if dt < 15 else None)
         logging.warning(f"[annnounce_matches] Posted match at thread_ts {thread_ts}")
         last_announce_ts = time.time()
 

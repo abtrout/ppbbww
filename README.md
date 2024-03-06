@@ -2,7 +2,7 @@
 
 Locate large boats as they pass by Pillar Point. 
 
-![](https://i.imgur.com/uSNPctj.jpeg)
+![](https://i.imgur.com/wGaePIb.png)
 
 #### Install the requirements.
 
