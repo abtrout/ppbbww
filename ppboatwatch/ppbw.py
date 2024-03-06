@@ -1,9 +1,12 @@
 import argparse
 import asyncio
+import json
 import logging
 import random
 import tempfile
+import time
 import os
+import sys
 
 from slack_sdk.web.async_client import AsyncWebClient
 from PIL import Image, ImageDraw, ImageFont
@@ -85,17 +88,23 @@ async def archive_matches(archive_q, archive):
 
 
 async def announce_matches(announce_q, client):
+    last_announce_ts, thread_ts = 0, None
     while True:
         matches_path = await announce_q.get()
         logging.warning(f"[annouce_matches] Posting match {matches_path}")
-        await post_match(client, matches_path)
+        dt = int(time.time()) - last_announce_ts
+        thread_ts = await post_match(client, matches_path, thread_ts if dt < 15000 else None)
+        logging.warning(f"[annnounce_matches] Posted match at thread_ts {thread_ts}")
+        last_announce_ts = time.time()
 
 
-async def post_match(client, frame_file):
+async def post_match(client, frame_file, thread_ts):
+    chan_name, chan_id = "#boatwatch", "C06LMBRNV8U"
     with open(frame_file, "rb") as f:
-        res = await client.files_upload_v2(file=f, channel="C06LMBRNV8U")
+        res = await client.files_upload(file=f, channels=chan_name, thread_ts=thread_ts)
     if not res["ok"]:
         logging.error(f"Failed to post_match: {res}")
+    return res.get("file").get("shares").get("private").get(chan_id)[0].get("ts")
 
 
 async def main_task(args):
