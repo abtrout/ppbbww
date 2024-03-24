@@ -35,7 +35,6 @@ async def sample_stream(frames_q, sampler):
 
 async def find_matches(frames_q, archive_q, announce_q):
     detector = ObjectDetector(thresh=0.80)
-    font = ImageFont.truetype("roboto-regular.ttf", 15)
     while True:
         # Get filenames from the queue and run object detector.
         frame_file = await frames_q.get()
@@ -50,7 +49,6 @@ async def find_matches(frames_q, archive_q, announce_q):
         # Draw bounding boxes and send to Slack.
         draw = ImageDraw.Draw(image)
         for label, score, box in matches:
-            draw.text((box[0], box[1] - 15), label, (255, 255, 255), font=font)
             draw.rectangle(box, outline=(255, 255, 255), width=1)
         out_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
         image.save(out_file.name)
@@ -93,7 +91,9 @@ async def announce_matches(announce_q, client):
         matches_path = await announce_q.get()
         logging.warning(f"[annouce_matches] Posting match {matches_path}")
         dt = int(time.time()) - last_announce_ts
-        thread_ts = await post_match(client, matches_path, thread_ts if dt < 15 else None)
+        thread_ts = await post_match(
+            client, matches_path, thread_ts if dt < 15 else None
+        )
         logging.warning(f"[annnounce_matches] Posted match at thread_ts {thread_ts}")
         last_announce_ts = time.time()
 
@@ -112,8 +112,8 @@ async def main_task(args):
     client = AsyncWebClient(token=os.environ["SLACK_API_TOKEN"])
     sampler = StreamSampler("mavericksov", args.data_dir)
 
-    frames_q = asyncio.Queue()    # frames that should be inspected.
-    archive_q = asyncio.Queue()   # matches that should be archived.
+    frames_q = asyncio.Queue()  # frames that should be inspected.
+    archive_q = asyncio.Queue()  # matches that should be archived.
     announce_q = asyncio.Queue()  # matches that should be announced in Slack.
 
     async with asyncio.TaskGroup() as tg:
