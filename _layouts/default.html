@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <title> Ppbbww | {{ page.ts }}</title>
+    <style type="text/css">
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      .container {
+        width: 90%;
+        max-width: 800px;
+        margin: 5em auto;
+        font-family: monospace;
+        font-size: 1.5em;
+        color: #626262;
+      }
+      .column {
+        float: left;
+        width: 33.3%;
+      }
+      .row { margin: 10px 0; }
+      .row:after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+      a {
+        font-weight: bold;
+        text-decoration: none;
+        color: #626262;
+      }
+      .text-left { text-align: left; }
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      .title {
+        font-size: 2em;
+        text-decoration: none;
+        color: #626262;
+      }
+      .img-container {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+      }
+      .img-container img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+      }
+    </style>
+    <meta property="og:title" content="Ppbbww | {{ page.date_time }}"/>
+    <meta property="og:image" content="https://abtrout.github.io/ppbbww/gallery/{{ page.ts }}.jpg"/>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <a href="/ppbbww" class="title">Ppbbww</a>
+      </div>
+      <div class="row">
+        <div class="img-container">
+          <img src="/ppbbww/gallery/{{ page.ts }}.jpg">
+        </div>
+      </div>
+      <div class="row">
+        <div class="column text-right">
+          &nbsp;
+          {% if page.prev_ts %}
+          <a href="/ppbbww/{{ page.prev_ts }}" alt="Older posts">&lt;&lt;</a>
+          {% endif %}
+        </div>
+        <div class="column text-center">
+          {{ page.date_time }}
+        </div>
+        <div class="column text-left">
+          {% if page.next_ts %}
+          <a href="/ppbbww/{{ page.next_ts }}" alt="Newer posts">&gt;&gt;</a>
+          {% endif %}
+          &nbsp;
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
