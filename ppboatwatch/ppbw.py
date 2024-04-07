@@ -64,13 +64,13 @@ def filter_matches(matches):
         # Skip common but uninteresting cases based on size and label.
         box_size = (box[2] - box[0]) * (box[3] - box[1])
         if box_size < 500:
-            logging.debug(f"Skipping small box (box_size={box_size})")
+            logging.info(f"Skipping small box (box_size={box_size})")
             continue
         if label == "boat" and box_size < 3000:
-            logging.debug(f"Skipping small boat (box_size={box_size})")
+            logging.info(f"Skipping small boat (box_size={box_size})")
             continue
         if label == "bird" and box_size < 1000:
-            logging.debug(f"Skipping small bird (box_size={box_size})")
+            logging.info(f"Skipping small bird (box_size={box_size})")
             continue
         # Return everything else.
         yield (label, score, box)
@@ -104,7 +104,11 @@ async def post_match(client, frame_file, thread_ts):
         res = await client.files_upload(file=f, channels=chan_name, thread_ts=thread_ts)
     if not res["ok"]:
         logging.error(f"Failed to post_match: {res}")
-    return res.get("file").get("shares").get("private").get(chan_id)[0].get("ts")
+    try:
+        return res.get("file").get("shares").get("private").get(chan_id)[0].get("ts")
+    except Exception as ex:
+        logging.error(f"Failed to post_match: invalid response {ex}")
+        logging.error(res)
 
 
 async def main_task(args):
@@ -112,9 +116,9 @@ async def main_task(args):
     client = AsyncWebClient(token=os.environ["SLACK_API_TOKEN"])
     sampler = StreamSampler("mavericksov", args.data_dir)
 
-    frames_q = asyncio.Queue()  # frames that should be inspected.
+    frames_q = asyncio.Queue()   # frames that should be inspected.
     archive_q = asyncio.Queue()  # matches that should be archived.
-    announce_q = asyncio.Queue()  # matches that should be announced in Slack.
+    announce_q = asyncio.Queue() # matches that should be announced in Slack.
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(sample_stream(frames_q, sampler))
@@ -130,7 +134,7 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    level = logging.DEBUG if args.verbose else logging.WARN
+    level = logging.INFO if args.verbose else logging.WARN
     logging.basicConfig(level=level, format="%(asctime)s %(message)s")
 
     asyncio.run(main_task(args))
