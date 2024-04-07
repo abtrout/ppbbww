@@ -52,9 +52,11 @@ dependencies = [
 ]
 
 [project.scripts]
+curate-gallery = "ppboatwatch.gallery:curate"
 find-objects = "ppboatwatch.find_objects:main"
-sample-streams = "ppboatwatch.sample_streams:main"
+gen-gallery = "ppboatwatch.gallery:generate"
 ppbw = "ppboatwatch.ppbw:main"
+sample-streams = "ppboatwatch.sample_streams:main"
 
 [tool.setuptools]
 packages = ["ppboatwatch"]
