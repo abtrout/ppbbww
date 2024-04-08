@@ -1,42 +1,19 @@
-# `pp-boatwatch` 
+_Pillar Point boats, birds, [~~and waves~~](https://github.com/abtrout/ppbbww/issues/8) watcher_.
 
-Locate large boats as they pass by Pillar Point. 
+[`ppbw`](/ppboatwatch/ppbw.py) is a Python project that samples frames from the [Mavericks](https://en.wikipedia.org/wiki/Mavericks,_California) Surfline cam and runs [facebook/detr-resnet-50](https://huggingface.co/facebook/detr-resnet-50) on them to detect various objects, e.g. boats and birds. Matches are archived in a SQLite database and announced to a shared Slack channel to be enjoyed with friends.
 
-![](https://i.imgur.com/wGaePIb.png)
+After running this for a while, _many neat images_ were captured, which lead to the creation of the gallery. There's a small [`curator`](/ppboatwatch/gallery.py#L77-L80) web app for hand picking gallery-worthy images from the matches database, and a script to [`generate`](/ppboatwatch/gallery.py#L83-L114) a static Jekyll site that's suitable to be deployed on my [`gh-pages`](https://github.com/abtrout/ppbbww/tree/gh-pages) branch. I curate by hand and manually push updates sometimes, ¯\\\_(ツ)_/¯.
 
-#### Install the requirements.
+__[Check out the gallery here!](https://abtrout.github.io/ppbbww)__
+
+#### Getting started
 
 ```
-$ apt install ffmpeg               # for frame extraction
-$ apt install nvidia-cuda-toolkit  # for GPU support
+$ apt install ffmpeg               # for web stream frame extraction
+$ apt install nvidia-cuda-toolkit  # for Nvidia GPU support
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pip install -e . 
+$ pip install -e .
 ```
 
-#### Accumulate data by sampling streams. 
-
-```
-$ sample-streams --cams mavericks mavericksov
-2024-02-11 20:36:15,997 cam_name=mavericksov num_frames=4 Extracted frames
-2024-02-11 20:36:15,998 cam_name=mavericksov delay=12 Sleeping
-2024-02-11 20:36:16,583 cam_name=mavericks num_frames=5 Extracted frames
-2024-02-11 20:36:16,583 cam_name=mavericks delay=11 Sleeping
-2024-02-11 20:36:28,261 cam_name=mavericks num_frames=5 Extracted frames
-2024-02-11 20:36:28,261 cam_name=mavericks delay=14 Sleeping
-2024-02-11 20:36:28,949 cam_name=mavericksov num_frames=4 Extracted frames
-2024-02-11 20:36:28,949 cam_name=mavericksov delay=14 Sleeping
-...
-```
-
-#### Find boats in images with [DETR](https://huggingface.co/facebook/detr-resnet-50). 
-
-```
-$ find-boats 
-2024-02-14 13:56:06,022 BoatFinder initializing ...
-2024-02-14 13:56:08,380 BoatFinder initialized (for cuda:0); took 2.3576930790004553 seconds
-2024-02-14 13:56:08,384 Searching file ./data/mavericksov/02142024/11/1707939852-thumb-0003.jpg...
-2024-02-14 13:56:09,939 Finished search in 1.5548269860009896 seconds
-2024-02-14 13:56:09,939 >> label=boat    score=0.994     box=[517, 81, 910, 147]
-2024-02-14 13:56:09,944 Outlined matches and saved to file ./data/mavericksov/02142024/11/1707939852-thumb-0003_boats.jpg
-```
+Check out the available [commands](pyproject.toml#L54-L59) as good places to start.
