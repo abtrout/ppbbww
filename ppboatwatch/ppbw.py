@@ -16,19 +16,19 @@ from .stream_sampler import StreamSampler
 from .object_detector import ObjectDetector
 
 
-async def sample_stream(frames_q, sampler):
+async def sample_stream(frames_q, sampler, min_delay, max_delay):
     while True:
         try:
             frames = await sampler.get_recent_frames()
             logging.warning(f"[sample_stream]: Extracted {len(frames)} recent frames")
             assert len(frames) > 0
             await frames_q.put(frames[0].path)
-            for frame in frames[1:]:  # we only keep 1 frame!
+            for frame in frames[1:]:  # only keep 1 frame
                 os.remove(frame)
         except Exception as ex:
             logging.error(f"[sample_stream]: Failed to get_recent_frames: {ex}")
 
-        delay = random.randint(3, 10)  # seconds!
+        delay = random.randint(min_delay, max_delay)
         logging.warning(f"[sample_stream]: Sleeping {delay} seconds")
         await asyncio.sleep(delay)
 
@@ -85,14 +85,14 @@ async def archive_matches(archive_q, archive):
             archive.add_match(ts=ts, filename=file, label=label, score=score, box=box)
 
 
-async def announce_matches(announce_q, client):
+async def announce_matches(announce_q, client, max_delay):
     last_announce_ts, thread_ts = 0, None
     while True:
         matches_path = await announce_q.get()
         logging.warning(f"[annouce_matches] Posting match {matches_path}")
         dt = int(time.time()) - last_announce_ts
         thread_ts = await post_match(
-            client, matches_path, thread_ts if dt < 15 else None
+            client, matches_path, thread_ts if dt < max_delay else None
         )
         logging.warning(f"[annnounce_matches] Posted match at thread_ts {thread_ts}")
         last_announce_ts = time.time()
@@ -121,10 +121,10 @@ async def main_task(args):
     announce_q = asyncio.Queue() # matches that should be announced in Slack.
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(sample_stream(frames_q, sampler))
+        tg.create_task(sample_stream(frames_q, sampler, args.min_delay, args.max_delay))
         tg.create_task(find_matches(frames_q, archive_q, announce_q))
         tg.create_task(archive_matches(archive_q, archive))
-        tg.create_task(announce_matches(announce_q, client))
+        tg.create_task(announce_matches(announce_q, client, args.max_delay))
 
 
 def main():
@@ -132,6 +132,8 @@ def main():
     parser.add_argument("-d", "--data-dir", default="./data", type=str)
     parser.add_argument("-f", "--db-file", default="./archive.db", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--min-delay", default=5, type=int)
+    parser.add_argument("--max-delay", default=30, type=int)
     args = parser.parse_args()
 
     level = logging.INFO if args.verbose else logging.WARN
