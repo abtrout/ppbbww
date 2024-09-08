@@ -18,6 +18,7 @@ from .object_detector import ObjectDetector
 
 
 async def sample_stream(frames_q, sampler, min_delay, max_delay, day_start, day_end):
+    fail_count, max_failures = 0, 5
     while True:
         try:
             frames = await sampler.get_recent_frames()
@@ -26,8 +27,13 @@ async def sample_stream(frames_q, sampler, min_delay, max_delay, day_start, day_
             await frames_q.put(frames[0].path)
             for frame in frames[1:]:  # only keep 1 frame
                 os.remove(frame)
+            fail_count = 0  # this request succeeded, reset fail counter.
         except Exception as ex:
             logging.error(f"[sample_stream]: Failed to get_recent_frames: {ex}")
+            fail_count += 1
+            if fail_count >= max_failures:
+                logging.warning("[sample_stream]: Too many download failures. Killing program!")
+                sys.exit(1)
 
         if day_start <= datetime.now().time() <= day_end:
             delay = random.randint(min_delay, max_delay)
