@@ -8,6 +8,7 @@ import time
 import os
 import sys
 
+from datetime import datetime
 from slack_sdk.web.async_client import AsyncWebClient
 from PIL import Image, ImageDraw, ImageFont
 
@@ -16,19 +17,23 @@ from .stream_sampler import StreamSampler
 from .object_detector import ObjectDetector
 
 
-async def sample_stream(frames_q, sampler, min_delay, max_delay):
+async def sample_stream(frames_q, sampler, min_delay, max_delay, day_start, day_end):
     while True:
         try:
             frames = await sampler.get_recent_frames()
             logging.warning(f"[sample_stream]: Extracted {len(frames)} recent frames")
-            assert len(frames) > 0
+            assert len(frames) > 0, "No frames extracted"
             await frames_q.put(frames[0].path)
             for frame in frames[1:]:  # only keep 1 frame
                 os.remove(frame)
         except Exception as ex:
             logging.error(f"[sample_stream]: Failed to get_recent_frames: {ex}")
 
-        delay = random.randint(min_delay, max_delay)
+        if day_start <= datetime.now().time() <= day_end:
+            delay = random.randint(min_delay, max_delay)
+        else:
+            logging.warning(f"[sample_stream]: Day has ended!")
+            delay = 86400 - (datetime.combine(datetime.today(), day_end) - datetime.combine(datetime.today(), day_start)).total_seconds()
         logging.warning(f"[sample_stream]: Sleeping {delay} seconds")
         await asyncio.sleep(delay)
 
@@ -121,7 +126,7 @@ async def main_task(args):
     announce_q = asyncio.Queue() # matches that should be announced in Slack.
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(sample_stream(frames_q, sampler, args.min_delay, args.max_delay))
+        tg.create_task(sample_stream(frames_q, sampler, args.min_delay, args.max_delay, args.day_start, args.day_end))
         tg.create_task(find_matches(frames_q, archive_q, announce_q))
         tg.create_task(archive_matches(archive_q, archive))
         tg.create_task(announce_matches(announce_q, client, args.max_delay))
@@ -132,8 +137,10 @@ def main():
     parser.add_argument("-d", "--data-dir", default="./data", type=str)
     parser.add_argument("-f", "--db-file", default="./archive.db", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
-    parser.add_argument("--min-delay", default=5, type=int)
-    parser.add_argument("--max-delay", default=30, type=int)
+    parser.add_argument("--min-delay", default=10, type=int)
+    parser.add_argument("--max-delay", default=60, type=int)
+    parser.add_argument("--day-start", default="6:00", type=lambda s: datetime.strptime(s, "%H:%M").time())
+    parser.add_argument("--day-end", default="21:00", type=lambda s: datetime.strptime(s, "%H:%M").time())
     args = parser.parse_args()
 
     level = logging.INFO if args.verbose else logging.WARN
