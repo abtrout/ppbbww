@@ -56,7 +56,7 @@ dependencies = [
 curate-gallery = "ppboatwatch.gallery:curate"
 find-objects = "ppboatwatch.find_objects:main"
 gen-gallery = "ppboatwatch.gallery:generate"
-ppbw = "ppboatwatch.ppbw:main"
+ppbbww = "ppboatwatch.ppbbww:main"
 sample-streams = "ppboatwatch.sample_streams:main"
 
 [tool.setuptools]
