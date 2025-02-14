@@ -95,7 +95,7 @@ async def announce_matches(announce_q, client):
     while True:
         file, matches = await announce_q.get()
         last_date, now_date = mkdate(last_announce_ts), mkdate(time.time())
-        logging.warning(f"[announce_matches] debug: old_thread_ts={thread_ts} last_date={last_date} now_date={now_date}")
+        logging.warning(f"[announce_matches] last_date={last_date} now_date={now_date} thread_ts={thread_ts}")
         thread_ts = await post_match(
             client, file, thread_ts if last_date == now_date else None
         )
@@ -107,19 +107,31 @@ async def post_match(client, frame_file, thread_ts):
     chan_name, chan_id = "#boatwatch", "C06LMBRNV8U"
     frame_ts = frame_file.split("/")[-1].split("-")[0]
     with open(frame_file, "rb") as f:
-        res = await client.files_upload(
-            channels=chan_name,
+        res = await client.files_upload_v2(
+            channel=chan_id,
             thread_ts=thread_ts,
             file=f,
             filename=frame_ts,
         )
     if not res["ok"]:
         logging.error(f"Failed to post_match: {res}")
-    try:
-        return res.get("file").get("shares").get("private").get(chan_id)[0].get("ts")
-    except Exception as ex:
-        logging.error(f"Failed to post_match: invalid response {ex}")
-        logging.error(res)
+        return
+
+    file_id = res.get("files")[0].get("id")
+
+    attempt = 0
+    while attempt < 10:
+        attempt += 1
+        try:
+            res = await client.files_info(file=file_id)
+            if not res["ok"]:
+                logging.error(f"Failed to files_info: {res}")
+                return
+            thread_ts = res.get("file").get("shares").get("private").get(chan_id)[0].get("ts")
+            return thread_ts
+        except Exception as ex:
+            logging.error(f"failed to get files_info for attempt {attempt}")
+            await asyncio.sleep(3)
 
 
 async def main_task(args):
