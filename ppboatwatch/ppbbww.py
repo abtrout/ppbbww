@@ -70,10 +70,10 @@ def filter_matches(matches):
             continue
         # Skip common but uninteresting cases based on size and label.
         box_size = (box[2] - box[0]) * (box[3] - box[1])
-        if num_boxes < 5 and box_size < 500:
+        if num_boxes < 3 and box_size < 500:
             logging.info(f"Skipping small box (box_size={box_size})")
             continue
-        if num_boxes < 5 and label == "boat" and box_size < 3000:
+        if num_boxes < 3 and label == "boat" and box_size < 3000:
             logging.info(f"Skipping small boat (box_size={box_size})")
             continue
         if num_boxes < 5 and label == "bird" and box_size < 1000:

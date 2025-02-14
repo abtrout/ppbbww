@@ -12,24 +12,17 @@ from tempfile import mkstemp
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
     "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br, zstd",
     "Origin": "https://www.surfline.com",
-    "Host": "cams.cdn-surfline.com",
     "DNT": "1",
     "Referer": "https://www.surfline.com/",
-    "Pragma": "no-cache",
     "Cache-Control": "no-cache",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "cross-site",
-    "TE": "trailers",
 }
-
 
 class StreamSampler:
     def __init__(self, cam_name, data_dir="./data"):
-        self.base_url = f"https://cams.cdn-surfline.com/cdn-wc/wc-{cam_name}"
+        self.base_url = f"https://hls.cdn-surfline.com/oregon/wc-{cam_name}"
         self.cam_name = cam_name
         self.data_dir = data_dir
 
@@ -44,7 +37,7 @@ class StreamSampler:
             return self.__extract_frames(chunk_file)
 
     async def __get_recent_chunk_url(self, session):
-        url = f"{self.base_url}/chunklist.m3u8"
+        url = f"{self.base_url}/playlist.m3u8"
         async with session.get(url) as res:
             chunklist = await res.text()
             # Only check last/final chunk from chunklist.
