@@ -6,7 +6,7 @@ from contextlib import closing
 
 INIT_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS matches (
-    ts INTEGER PRIMARY KEY,
+    ts,
     filename,
     label,
     score,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS matches (
 )"""
 
 ADD_MATCH_SQL = """
-INSERT OR IGNORE INTO matches (ts, filename, label, score, x0, y0, x1, y1)
+INSERT INTO matches (ts, filename, label, score, x0, y0, x1, y1)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
 
 LIST_MATCHES_SQL = """
