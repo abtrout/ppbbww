@@ -53,9 +53,7 @@ dependencies = [
 ]
 
 [project.scripts]
-curate-gallery = "ppboatwatch.gallery:curate"
 find-objects = "ppboatwatch.find_objects:main"
-gen-gallery = "ppboatwatch.gallery:generate"
 ppbbww = "ppboatwatch.ppbbww:main"
 sample-streams = "ppboatwatch.sample_streams:main"
 
