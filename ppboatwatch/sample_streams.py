@@ -11,14 +11,10 @@ async def sample_stream(cam_name, data_dir):
     while True:
         try:
             frames = await ss.get_recent_frames()
-            logging.info(
-                f"cam_name={cam_name} num_frames={len(frames)} Extracted frames"
-            )
         except Exception as ex:
             logging.error(f"cam_name={cam_name} Failed to get_recent_frames: {ex}")
         # TODO: Decrease delay but only keep 1 frame?
         delay = random.randint(5, 20)  # seconds!
-        logging.info(f"cam_name={cam_name} delay={delay} Sleeping")
         await asyncio.sleep(delay)
 
 

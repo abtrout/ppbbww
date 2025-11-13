@@ -22,11 +22,9 @@ async def sample_stream(frames_q, sampler, min_delay, max_delay, day_start, day_
     while True:
         try:
             backoff = (2 ** fail_count) - 1 + random.uniform(0, 2*fail_count)
-            logging.warning(f"[sample_stream]: Sleeping {backoff} for backoff ...")
             await asyncio.sleep(backoff)
 
             frames = await sampler.get_recent_frames()
-            logging.warning(f"[sample_stream]: Extracted {len(frames)} recent frames")
             await frames_q.put(frames[0].path)
             for frame in frames[1:]:  # only keep 1 frame
                 os.remove(frame)
@@ -39,12 +37,12 @@ async def sample_stream(frames_q, sampler, min_delay, max_delay, day_start, day_
             #    sys.exit(1)
 
         if day_start <= datetime.now().time() <= day_end:
-            delay = random.randint(min_delay, max_delay)
+            await asyncio.sleep(random.randint(min_delay, max_delay))
         else:
             logging.warning(f"[sample_stream]: Day has ended!")
             delay = 86400 - (datetime.combine(datetime.today(), day_end) - datetime.combine(datetime.today(), day_start)).total_seconds()
-        logging.warning(f"[sample_stream]: Sleeping {delay} seconds")
-        await asyncio.sleep(delay)
+            await asyncio.sleep(delay)
+            logging.warning(f"[sample_stream]: Day has begun!")
 
 
 async def find_matches(frames_q, archive_q, announce_q):
@@ -56,7 +54,6 @@ async def find_matches(frames_q, archive_q, announce_q):
         matches = list(filter_matches(detector.find(image)))
         if len(matches) == 0:
             os.remove(frame_file)
-            logging.warning(f"[find_matches]: No matches; cleaned up")
             continue
         # Archive (and announce) the frame and matches.
         await archive_q.put((frame_file, matches))
@@ -74,13 +71,10 @@ def filter_matches(matches):
         # Skip common but uninteresting cases based on size and label.
         box_size = (box[2] - box[0]) * (box[3] - box[1])
         if num_boxes < 3 and box_size < 500:
-            logging.info(f"Skipping small box (box_size={box_size})")
             continue
         if num_boxes < 3 and label == "boat" and box_size < 3000:
-            logging.info(f"Skipping small boat (box_size={box_size})")
             continue
         if num_boxes < 5 and label == "bird" and box_size < 1000:
-            logging.info(f"Skipping small bird (box_size={box_size})")
             continue
         # Return everything else.
         yield (label, score, box)
@@ -101,6 +95,7 @@ async def announce_matches(announce_q, client):
     while True:
         file, matches = await announce_q.get()
         last_date, now_date = mkdate(last_announce_ts), mkdate(time.time())
+        logging.warning(f"[announce_matches] debug: old_thread_ts={thread_ts} last_date={last_date} now_date={now_date}")
         thread_ts = await post_match(
             client, file, thread_ts if last_date == now_date else None
         )
