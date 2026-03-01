@@ -107,19 +107,22 @@ async def post_match(client, frame_file, thread_ts):
     chan_name, chan_id = "#boatwatch", "C06LMBRNV8U"
     frame_ts = frame_file.split("/")[-1].split("-")[0]
     with open(frame_file, "rb") as f:
-        res = await client.files_upload_v2(
-            channel=chan_id,
-            thread_ts=thread_ts,
-            file=f,
-            filename=frame_ts,
-        )
-    if not res["ok"]:
-        logging.error(f"Failed to post_match: {res}")
-        return
+        try:
+            res = await client.files_upload_v2(
+                channel=chan_id,
+                thread_ts=thread_ts,
+                file=f,
+                filename=frame_ts,
+            )
+            if not res["ok"]:
+                logging.error(f"Failed to post_match: {res}")
+                return
+        except Exception as ex:
+            logging.error(f"Slack files_upload_v2 failed with exception: {ex}")
 
     file_id = res.get("files")[0].get("id")
-
     attempt = 0
+
     while attempt < 10:
         attempt += 1
         try:
